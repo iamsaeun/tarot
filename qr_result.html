@@ -82,10 +82,7 @@
   const bg = params.get("bg");
   const char = params.get("char");
   const item = params.get("item");
-  const key = params.get("key");
-
-  // 긴 텍스트는 localStorage에서 읽기
-  const advice = localStorage.getItem(key);
+const advice = params.get("advice");
 
   if (!bg || !char || !item || !advice) {
     document.body.innerHTML =
