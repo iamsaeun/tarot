@@ -130,9 +130,15 @@
      화면 렌더링
   ====================== */
   function renderResult(data) {
-    document.getElementById("tarotAdvice").innerText = data.tarot_advice || "";
-    document.getElementById("flowText").innerText = data.flow_text || "";
-    document.getElementById("policyText").innerText = data.policy_text || "";
+    document.getElementById("tarotAdvice").innerText =
+  (data.tarot_advice || "").replace(/\*\*.*?\*\*/g, "").trim();
+
+
+    document.getElementById("flowText").innerText =
+  (data.flow_text || "").replace(/\*\*.*?\*\*/g, "").trim();
+
+document.getElementById("policyText").innerText =
+  (data.policy_text || "").replace(/\*\*.*?\*\*/g, "").trim();
 
     drawCard(data);
   }
