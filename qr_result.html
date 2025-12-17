@@ -6,38 +6,18 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
   <style>
-    @font-face {
-  font-family: "Sunflower";
-  src: url("https://iamsaeun.github.io/tarot/Sunflower-Light.ttf") format("truetype");
-  font-weight: 300;
-  font-style: normal;
-}
-
-@font-face {
-  font-family: "Sunflower";
-  src: url("https://iamsaeun.github.io/tarot/Sunflower-Bold.ttf") format("truetype");
-  font-weight: 700;
-  font-style: normal;
-}
-
     body {
       background: #141021;
       color: white;
-      font-family: "Sunflower", sans-serif;
-font-weight: 300;
-
+      font-family: sans-serif;
       text-align: center;
       padding: 20px;
     }
-h1, h2 {
-  font-weight: 700;
-}
-
 
     h1 {
       margin-top: 10px;
       font-size: 28px;
-      font-weight: 700;
+      font-weight: 600;
     }
 
     canvas {
@@ -71,6 +51,7 @@ h1, h2 {
     .section h2 {
       font-size: 18px;
       margin-bottom: 10px;
+      font-weight: 600;
     }
   </style>
 
@@ -83,7 +64,7 @@ h1, h2 {
   <h1>당신의 2026년 타로 결과</h1>
 
   <!-- 카드 이미지 -->
-  <canvas id="cardCanvas" ></canvas>
+  <canvas id="cardCanvas"></canvas>
   <br />
   <button id="saveBtn">카드 이미지 저장</button>
 
@@ -104,17 +85,20 @@ h1, h2 {
   </div>
 
 <script>
-
+  /* ======================
+     Supabase 설정
+  ====================== */
   const SUPABASE_URL = "https://wmfghjrimlraztofxpsq.supabase.co";
-  const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndtZmdoanJpbWxyYXp0b2Z4cHNxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjU5NDkyNDMsImV4cCI6MjA4MTUyNTI0M30.x0d9onTCCBJlc1CsjZkaw75Mfq6P-uS-Pan1Gv4IzQc";
+  const SUPABASE_ANON_KEY = "네 anon key";
 
-
-  const supabaseClient = window.supabase.createClient(
+  const sb = window.supabase.createClient(
     SUPABASE_URL,
     SUPABASE_ANON_KEY
   );
 
-
+  /* ======================
+     URL에서 key(id) 추출
+  ====================== */
   const params = new URLSearchParams(location.search);
   const key = params.get("key");
 
@@ -123,19 +107,18 @@ h1, h2 {
     throw new Error("No key");
   }
 
+  /* ======================
+     데이터 불러오기
+  ====================== */
   async function loadResult() {
-    console.log("🟡 loadResult 시작, key =", key);
-
-    const { data, error } = await supabaseClient
+    const { data, error } = await sb
       .from("tarot_results")
       .select("*")
       .eq("id", key)
       .single();
 
-    console.log("🔥 Supabase raw data:", data);
-
     if (error || !data) {
-      console.error("❌ Supabase error:", error);
+      console.error(error);
       document.body.innerHTML = "<p>결과 데이터를 불러올 수 없습니다.</p>";
       return;
     }
@@ -143,79 +126,55 @@ h1, h2 {
     renderResult(data);
   }
 
-
+  /* ======================
+     화면 렌더링
+  ====================== */
   function renderResult(data) {
-    console.log("🔵 renderResult 호출됨");
+    document.getElementById("tarotAdvice").innerText = data.tarot_advice || "";
+    document.getElementById("flowText").innerText = data.flow_text || "";
+    document.getElementById("policyText").innerText = data.policy_text || "";
 
-    document.getElementById("tarotAdvice").innerText =
-      data.tarot_advice ?? "타로 조언 데이터가 없습니다.";
-
-    document.getElementById("flowText").innerText =
-      data.flow_text ?? "흐름 카드 데이터가 없습니다.";
-
-    document.getElementById("policyText").innerText =
-      data.policy_text ?? "조언 카드 데이터가 없습니다.";
-
-
-    drawCardSafe(data);
+    drawCard(data);
   }
 
-
+  /* ======================
+     카드 이미지 합성
+  ====================== */
   const canvas = document.getElementById("cardCanvas");
   const ctx = canvas.getContext("2d");
 
+  const DISPLAY_W = 280;
+  const DISPLAY_H = 420;
+  const SCALE = 2;
 
-const DISPLAY_W = 280;  
-const DISPLAY_H = 420;
-const SCALE = 2;        
-
-
-canvas.width  = DISPLAY_W * SCALE;
-canvas.height = DISPLAY_H * SCALE;
-
-
-canvas.style.width  = DISPLAY_W + "px";
-canvas.style.height = DISPLAY_H + "px";
-
-
-ctx.setTransform(SCALE, 0, 0, SCALE, 0, 0);
-
+  canvas.width  = DISPLAY_W * SCALE;
+  canvas.height = DISPLAY_H * SCALE;
+  canvas.style.width  = DISPLAY_W + "px";
+  canvas.style.height = DISPLAY_H + "px";
+  ctx.setTransform(SCALE, 0, 0, SCALE, 0, 0);
 
   function loadImage(src) {
-    return new Promise((resolve, reject) => {
-      if (!src) {
-        reject("이미지 경로 없음");
-        return;
-      }
+    return new Promise((resolve) => {
       const img = new Image();
-      img.crossOrigin = "anonymous";
       img.onload = () => resolve(img);
-      img.onerror = () => reject(`이미지 로드 실패: ${src}`);
       img.src = src;
     });
   }
 
-  async function drawCardSafe(data) {
-    try {
-      console.log("🖼 이미지 경로:", data.bg, data.char, data.item);
+  async function drawCard(data) {
+    const bg   = await loadImage(data.bg);
+    const char = await loadImage(data.char);
+    const item = await loadImage(data.item);
 
-      const bg   = await loadImage(data.bg);
-      const char = await loadImage(data.char);
-      const item = await loadImage(data.item);
-
-      ctx.clearRect(0, 0, DISPLAY_W, DISPLAY_H);
-ctx.drawImage(bg, 0, 0, DISPLAY_W, DISPLAY_H);
-ctx.drawImage(char, 0, 0, DISPLAY_W, DISPLAY_H);
-ctx.drawImage(item, 0, 0, DISPLAY_W, DISPLAY_H);
-
-
-    } catch (err) {
-      console.warn("⚠ 카드 이미지 렌더 실패:", err);
-
-    }
+    ctx.clearRect(0, 0, DISPLAY_W, DISPLAY_H);
+    ctx.drawImage(bg, 0, 0, DISPLAY_W, DISPLAY_H);
+    ctx.drawImage(char, 0, 0, DISPLAY_W, DISPLAY_H);
+    ctx.drawImage(item, 0, 0, DISPLAY_W, DISPLAY_H);
   }
 
-
+  /* ======================
+     이미지 저장
+  ====================== */
   document.getElementById("saveBtn").onclick = () => {
     const link = document.createElement("a");
     link.download = "my_tarot_2026.png";
