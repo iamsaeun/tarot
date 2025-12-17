@@ -53,6 +53,8 @@
       margin-bottom: 10px;
     }
   </style>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
 </head>
 
 <body>
@@ -82,20 +84,59 @@
 
 <script>
   // ======================
-  // 1. QR 데이터 파싱
+  // 1. Supabase 설정
+  // ======================
+  const SUPABASE_URL = "https://wmfghjrimlraztofxpsq.supabase.co";
+  const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndtZmdoanJpbWxyYXp0b2Z4cHNxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjU5NDkyNDMsImV4cCI6MjA4MTUyNTI0M30.x0d9onTCCBJlc1CsjZkaw75Mfq6P-uS-Pan1Gv4IzQc";
+
+  const supabase = window.supabase.createClient(
+    SUPABASE_URL,
+    SUPABASE_ANON_KEY
+  );
+
+  // ======================
+  // 2. URL에서 key(id) 추출
   // ======================
   const params = new URLSearchParams(location.search);
-  const raw = params.get("data");
+  const key = params.get("key");
 
-  if (!raw) {
+  if (!key) {
     document.body.innerHTML = "<p>결과 데이터를 불러올 수 없습니다.</p>";
-    throw new Error("No data");
+    throw new Error("No key");
   }
 
-  const data = JSON.parse(decodeURIComponent(raw));
+  // ======================
+  // 3. Supabase에서 데이터 불러오기
+  // ======================
+  async function loadResult() {
+    const { data, error } = await supabase
+      .from("tarot_results")
+      .select("*")
+      .eq("id", key)
+      .single();
+
+    if (error || !data) {
+      console.error(error);
+      document.body.innerHTML = "<p>결과 데이터를 불러올 수 없습니다.</p>";
+      return;
+    }
+
+    renderResult(data);
+  }
 
   // ======================
-  // 2. 카드 이미지 합성
+  // 4. 화면 렌더링
+  // ======================
+  function renderResult(data) {
+    drawCard(data);
+
+    document.getElementById("tarotAdvice").innerText = data.tarot_advice;
+    document.getElementById("flowText").innerText = data.flow_text;
+    document.getElementById("policyText").innerText = data.policy_text;
+  }
+
+  // ======================
+  // 5. 카드 이미지 합성
   // ======================
   const canvas = document.getElementById("cardCanvas");
   const ctx = canvas.getContext("2d");
@@ -108,7 +149,7 @@
     });
   }
 
-  async function drawCard() {
+  async function drawCard(data) {
     const bg = await loadImage(data.bg);
     const char = await loadImage(data.char);
     const item = await loadImage(data.item);
@@ -119,10 +160,8 @@
     ctx.drawImage(item, 0, 0, canvas.width, canvas.height);
   }
 
-  drawCard();
-
   // ======================
-  // 3. 이미지 저장
+  // 6. 이미지 저장
   // ======================
   document.getElementById("saveBtn").onclick = () => {
     const link = document.createElement("a");
@@ -131,13 +170,9 @@
     link.click();
   };
 
-  // ======================
-  // 4. 텍스트 출력
-  // ======================
-  document.getElementById("tarotAdvice").innerText = data.tarotAdvice;
-  document.getElementById("flowText").innerText = data.flowText;
-  document.getElementById("policyText").innerText = data.policyText;
+  loadResult();
 </script>
+
 
 </body>
 </html>
