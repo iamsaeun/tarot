@@ -114,6 +114,7 @@
       .select("*")
       .eq("id", key)
       .single();
+    console.log("🔥 받아온 데이터:", data);
 
     if (error || !data) {
       console.error(error);
