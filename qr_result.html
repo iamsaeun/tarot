@@ -53,8 +53,9 @@
       margin-bottom: 10px;
     }
   </style>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
+  <!-- Supabase SDK -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 
 <body>
@@ -69,34 +70,35 @@
   <!-- 카드 해석 -->
   <div class="section">
     <h2>① 나만의 타로 카드</h2>
-    <div id="tarotAdvice"></div>
+    <div id="tarotAdvice">불러오는 중…</div>
   </div>
 
   <div class="section">
     <h2>② 흐름의 카드</h2>
-    <div id="flowText"></div>
+    <div id="flowText">불러오는 중…</div>
   </div>
 
   <div class="section">
     <h2>③ 조언의 카드</h2>
-    <div id="policyText"></div>
+    <div id="policyText">불러오는 중…</div>
   </div>
 
 <script>
-  // ======================
-  // 1. Supabase 설정
-  // ======================
+  /* ======================
+     1. Supabase 설정
+  ====================== */
   const SUPABASE_URL = "https://wmfghjrimlraztofxpsq.supabase.co";
   const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndtZmdoanJpbWxyYXp0b2Z4cHNxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjU5NDkyNDMsImV4cCI6MjA4MTUyNTI0M30.x0d9onTCCBJlc1CsjZkaw75Mfq6P-uS-Pan1Gv4IzQc";
 
-  const supabase = window.supabase.createClient(
+  // ❗ supabase → supabaseClient (중요)
+  const supabaseClient = window.supabase.createClient(
     SUPABASE_URL,
     SUPABASE_ANON_KEY
   );
 
-  // ======================
-  // 2. URL에서 key(id) 추출
-  // ======================
+  /* ======================
+     2. URL에서 key(id) 추출
+  ====================== */
   const params = new URLSearchParams(location.search);
   const key = params.get("key");
 
@@ -105,19 +107,22 @@
     throw new Error("No key");
   }
 
-  // ======================
-  // 3. Supabase에서 데이터 불러오기
-  // ======================
+  /* ======================
+     3. Supabase에서 데이터 불러오기
+  ====================== */
   async function loadResult() {
-    const { data, error } = await supabase
+    console.log("🟡 loadResult 시작, key =", key);
+
+    const { data, error } = await supabaseClient
       .from("tarot_results")
       .select("*")
       .eq("id", key)
       .single();
-    console.log("🔥 받아온 데이터:", data);
+
+    console.log("🔥 Supabase raw data:", data);
 
     if (error || !data) {
-      console.error(error);
+      console.error("❌ Supabase error:", error);
       document.body.innerHTML = "<p>결과 데이터를 불러올 수 없습니다.</p>";
       return;
     }
@@ -125,45 +130,67 @@
     renderResult(data);
   }
 
-  // ======================
-  // 4. 화면 렌더링
-  // ======================
+  /* ======================
+     4. 화면 렌더링 (텍스트 먼저!)
+  ====================== */
   function renderResult(data) {
-    drawCard(data);
+    console.log("🔵 renderResult 호출됨");
 
-    document.getElementById("tarotAdvice").innerText = data.tarot_advice;
-    document.getElementById("flowText").innerText = data.flow_text;
-    document.getElementById("policyText").innerText = data.policy_text;
+    document.getElementById("tarotAdvice").innerText =
+      data.tarot_advice ?? "타로 조언 데이터가 없습니다.";
+
+    document.getElementById("flowText").innerText =
+      data.flow_text ?? "흐름 카드 데이터가 없습니다.";
+
+    document.getElementById("policyText").innerText =
+      data.policy_text ?? "조언 카드 데이터가 없습니다.";
+
+    // 이미지 로드는 실패해도 전체를 죽이지 않도록 분리
+    drawCardSafe(data);
   }
 
-  // ======================
-  // 5. 카드 이미지 합성
-  // ======================
+  /* ======================
+     5. 카드 이미지 합성 (안전 버전)
+  ====================== */
   const canvas = document.getElementById("cardCanvas");
   const ctx = canvas.getContext("2d");
 
   function loadImage(src) {
-    return new Promise((resolve) => {
+    return new Promise((resolve, reject) => {
+      if (!src) {
+        reject("이미지 경로 없음");
+        return;
+      }
       const img = new Image();
+      img.crossOrigin = "anonymous";
       img.onload = () => resolve(img);
+      img.onerror = () => reject(`이미지 로드 실패: ${src}`);
       img.src = src;
     });
   }
 
-  async function drawCard(data) {
-    const bg = await loadImage(data.bg);
-    const char = await loadImage(data.char);
-    const item = await loadImage(data.item);
+  async function drawCardSafe(data) {
+    try {
+      console.log("🖼 이미지 경로:", data.bg, data.char, data.item);
 
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    ctx.drawImage(bg, 0, 0, canvas.width, canvas.height);
-    ctx.drawImage(char, 0, 0, canvas.width, canvas.height);
-    ctx.drawImage(item, 0, 0, canvas.width, canvas.height);
+      const bg   = await loadImage(data.bg);
+      const char = await loadImage(data.char);
+      const item = await loadImage(data.item);
+
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(bg, 0, 0, canvas.width, canvas.height);
+      ctx.drawImage(char, 0, 0, canvas.width, canvas.height);
+      ctx.drawImage(item, 0, 0, canvas.width, canvas.height);
+
+    } catch (err) {
+      console.warn("⚠ 카드 이미지 렌더 실패:", err);
+      // 이미지 실패해도 텍스트는 유지
+    }
   }
 
-  // ======================
-  // 6. 이미지 저장
-  // ======================
+  /* ======================
+     6. 이미지 저장
+  ====================== */
   document.getElementById("saveBtn").onclick = () => {
     const link = document.createElement("a");
     link.download = "my_tarot_2026.png";
@@ -173,7 +200,6 @@
 
   loadResult();
 </script>
-
 
 </body>
 </html>
