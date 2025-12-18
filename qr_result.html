@@ -53,6 +53,16 @@
       margin-bottom: 10px;
       font-weight: 600;
     }
+    .link-box {
+  margin-top: 12px;
+  font-size: 14px;
+}
+
+.link-box a {
+  color: #cdbdff;
+  text-decoration: underline;
+}
+
   </style>
 
   <!-- Supabase SDK -->
@@ -77,11 +87,13 @@
   <div class="section">
     <h2>② 흐름의 카드</h2>
     <div id="flowText">불러오는 중…</div>
+    <div id="flowLink"></div>
   </div>
 
   <div class="section">
     <h2>③ 조언의 카드</h2>
     <div id="policyText">불러오는 중…</div>
+    <div id="policyLink"></div>
   </div>
 
 <script>
@@ -139,6 +151,24 @@ document.getElementById("flowText").innerText =
 document.getElementById("policyText").innerText =
   (data.policy_text || "").replace(/\*\*/g, "").trim();
 
+  if (data.flow_link) {
+    document.getElementById("flowLink").innerHTML = `
+      <div class="link-box">
+        🔗 <a href="${data.flow_link}" target="_blank" rel="noopener">
+          관련 기사 보러가기
+        </a>
+      </div>
+    `;
+  }
+  if (data.policy_link) {
+    document.getElementById("policyLink").innerHTML = `
+      <div class="link-box">
+        🔗 <a href="${data.policy_link}" target="_blank" rel="noopener">
+          관련 정책 자세히 보기
+        </a>
+      </div>
+    `;
+  }
 
 
     drawCard(data);
