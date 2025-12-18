@@ -35,7 +35,9 @@
       color: white;
       font-size: 15px;
       cursor: pointer;
+      font-family: "SunflowerBold", sans-serif;
     }
+
 
     .section {
       max-width: 720px;
@@ -93,6 +95,8 @@ h1,
   font-family: "SunflowerLight", sans-serif;
   color: #cdbdff;
 }
+
+
 
   </style>
 
@@ -185,7 +189,7 @@ document.getElementById("policyText").innerText =
   if (data.flow_link) {
     document.getElementById("flowLink").innerHTML = `
       <div class="link-box">
-        🔗 <a href="${data.flow_link}" target="_blank" rel="noopener">
+         <a href="${data.flow_link}" target="_blank" rel="noopener">
           관련 기사 보러가기
         </a>
       </div>
@@ -194,7 +198,7 @@ document.getElementById("policyText").innerText =
   if (data.policy_link) {
     document.getElementById("policyLink").innerHTML = `
       <div class="link-box">
-        🔗 <a href="${data.policy_link}" target="_blank" rel="noopener">
+         <a href="${data.policy_link}" target="_blank" rel="noopener">
           관련 정책 자세히 보기
         </a>
       </div>
